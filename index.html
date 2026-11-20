@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Customer Needs Engine</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a dark-teal instrument panel. Hero = the method as a loop (inputs → ring → outputs);
+   below = one live run of the method on a chosen country (evidence blocks stack into 10 needs, then rank). */
+:root {
+  color-scheme: dark;
+  --bg: #0b1c1d;
+  --bg-glow: #15403e;
+  --panel: #102828;
+  --line: #2b4c4a;
+  --fg: #e9f2f0;
+  --muted: #8ea8a4;
+  --teal: #2e9f88;
+  --teal-hi: #63d4ba;
+  --teal-lo: #35635e;
+  --spark: #f0784e;
+  --node: #13201f;
+  --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --u: clamp(8px, 1.55vw, 17px);
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(26px, 4vw, 40px); font-weight: 700; }
+h2 { font-size: clamp(20px, 2.6vw, 26px); font-weight: 600; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal-hi); }
+.lede { color: var(--muted); max-width: 62ch; margin: 8px 0 0; }
+header { display: grid; gap: 6px; }
+
+/* ---------- panel ---------- */
+.panel {
+  background: radial-gradient(ellipse 70% 80% at 50% 45%, var(--bg-glow), var(--panel) 72%);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(18px, 3vw, 34px);
+  min-width: 0;
+}
+
+/* ---------- hero loop ---------- */
+.loop { display: grid; grid-template-columns: 1fr minmax(260px, 380px) 1fr; align-items: center; gap: 12px; }
+.inputs, .outputs { display: grid; gap: 14px; min-width: 0; }
+.in-card { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; }
+.doc {
+  width: 44px; height: 54px; border-radius: 5px; background: #eef3f1; padding: 8px 7px; display: grid; gap: 4px; align-content: start;
+}
+.doc i { display: block; height: 3px; border-radius: 2px; background: #a9bdb8; }
+.doc i:first-child { background: #1f3d3c; width: 60%; height: 4px; }
+.in-card b, .out b { font-family: var(--display); font-weight: 600; font-size: 15px; display: block; }
+.in-card span, .out span { color: var(--muted); font-size: 13px; }
+.out { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: center; }
+.tick { width: 30px; height: 30px; border-radius: 50%; background: var(--teal); display: grid; place-items: center; }
+.tick svg { width: 16px; height: 16px; }
+.ring-wrap { position: relative; max-width: 380px; width: 100%; margin: 0 auto; }
+.ring-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+.station-label { font-family: var(--display); font-weight: 600; font-size: 15px; fill: var(--fg); }
+.station-sub { font-family: var(--body); font-size: 11px; fill: var(--muted); }
+.caption {
+  min-height: 3.2em; text-align: center; color: var(--fg); font-size: 14px; max-width: 34ch; margin: 4px auto 0;
+}
+.caption em { font-style: normal; color: var(--teal-hi); font-weight: 600; }
+.tagline { text-align: center; color: var(--muted); font-size: 14px; margin-top: 18px; }
+.tagline strong { color: var(--fg); font-weight: 600; }
+
+/* ---------- country run ---------- */
+.run-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px 24px; }
+.picker { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 18px; }
+.cluster-group { display: grid; gap: 6px; }
+.cluster-group > span { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 500 14px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer; transition: background .2s, border-color .2s;
+}
+.chip:hover { border-color: var(--teal); }
+.chip[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #06201c; font-weight: 600; }
+.chip:focus-visible, .tok:focus-visible, .ghost:focus-visible { outline: 2px solid var(--spark); outline-offset: 2px; }
+.ghost { font: 500 13px var(--body); color: var(--teal-hi); background: none; border: 1px solid var(--teal-lo); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 13px; margin-top: 18px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { display: inline-block; height: 14px; border-radius: 3px; }
+.sw.own { width: calc(var(--u) * 2); background: var(--teal-hi); }
+.sw.clu { width: var(--u); background: var(--teal-lo); }
+.sw.rule { width: calc(var(--u) * 2); background: var(--spark); }
+
+.status { font-family: var(--mono); font-size: 12px; color: var(--teal-hi); min-height: 1.6em; margin-top: 14px; }
+.board-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; margin-top: 8px; align-items: start; }
+.board { position: relative; height: calc(var(--rowh) * 10); --rowh: 44px; }
+.row {
+  position: absolute; left: 0; right: 0; height: var(--rowh);
+  display: grid; grid-template-columns: clamp(108px, 22%, 190px) 1fr 44px; gap: 10px; align-items: center;
+  transition: transform .7s cubic-bezier(.2,.8,.2,1);
+  border-radius: 10px; padding: 0 8px;
+}
+.row .name { font-size: 13.5px; line-height: 1.2; color: var(--muted); transition: color .3s; }
+.row .track { display: flex; flex-wrap: nowrap; gap: 3px; align-items: center; min-width: 0; }
+.row .score { font-family: var(--mono); font-size: 14px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row.top { background: rgba(99, 212, 186, 0.07); box-shadow: inset 0 0 0 1px rgba(99, 212, 186, 0.25); }
+.row.top .name { color: var(--fg); font-weight: 600; }
+.row.top .score { color: var(--teal-hi); }
+.rank {
+  display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--teal-hi); color: #06201c;
+  font: 700 11px var(--display); margin-right: 6px; vertical-align: 1px;
+}
+.tok {
+  height: 20px; border: 0; border-radius: 3px; padding: 0; cursor: pointer; flex: none;
+  transition: transform .45s cubic-bezier(.2,.9,.3,1.3), opacity .35s;
+}
+.tok.own { width: calc(var(--u) * 2); background: var(--teal-hi); }
+.tok.clu { width: var(--u); background: var(--teal-lo); }
+.tok.rule { width: calc(var(--u) * 2); background: var(--spark); }
+.tok.pending { opacity: 0; transform: translateY(-26px) scale(.6); }
+.tok:hover, .tok.sel { filter: brightness(1.25); box-shadow: 0 0 0 2px var(--fg); }
+
+.inspector {
+  border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: rgba(11, 28, 29, 0.6); min-height: 92px;
+}
+.inspector .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.inspector .t { font-size: 15px; margin-top: 4px; }
+.inspector .m { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.side { display: grid; gap: 14px; min-width: 0; }
+.top3 { display: grid; gap: 10px; }
+.need {
+  border-radius: 12px; padding: 12px 14px; background: rgba(99, 212, 186, 0.06); border: 1px solid rgba(99, 212, 186, 0.22);
+  display: grid; gap: 4px;
+}
+.need h3 { font-size: 16px; display: flex; align-items: center; gap: 4px; }
+.need h3 .pts { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--teal-hi); font-weight: 500; }
+.need .why { font-size: 13px; color: var(--muted); }
+.need .why b { color: var(--fg); font-weight: 500; }
+.specific { font-size: 13px; color: var(--muted); }
+.specific b { color: var(--fg); font-weight: 600; }
+.foot { color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.foot code { font-family: var(--mono); font-size: 12px; color: var(--fg); }
+
+@media (max-width: 860px) {
+  .loop { grid-template-columns: 1fr; }
+  .inputs, .outputs { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .board-grid { grid-template-columns: 1fr; }
+  .connector { display: none; }
+}
+@media (max-width: 480px) {
+  .board { --rowh: 48px; }
+  .row { padding: 0 4px; gap: 6px; grid-template-columns: 96px 1fr 30px; }
+  .row .name { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row, .tok { transition: none; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Dassault × SKEMA · Customer Profile Workbook V7</div>
+    <h1>How the profile card decides what a customer needs</h1>
+    <p class="lede">Three kinds of evidence go in. Each piece is tied to a root cause, weighed, and ranked. The card comes out with the customer's top three support needs and the problems behind them.</p>
+  </header>
+
+  <!-- ================= THE LOOP ================= -->
+  <section class="panel" aria-labelledby="loop-h">
+    <h2 id="loop-h" class="eyebrow" style="font-family:var(--mono);font-size:11px;font-weight:500;margin-bottom:18px">The method</h2>
+    <div class="loop">
+      <div class="inputs">
+        <div class="in-card"><div class="doc"><i></i><i></i><i></i><i></i></div><div><b>40 pain points</b><span>Real support problems, each tagged with a role family and a source</span></div></div>
+        <div class="in-card"><div class="doc"><i></i><i></i><i></i><i></i></div><div><b>14 country facts</b><span>Fleet history, ambitions, operations, who decides</span></div></div>
+        <div class="in-card"><div class="doc"><i></i><i></i><i></i><i></i></div><div><b>8 working-culture scores</b><span>UN, World Bank, EF, WIPO, Hofstede</span></div></div>
+      </div>
+
+      <div>
+        <div class="ring-wrap">
+          <svg id="ring" viewBox="-40 -30 400 380" role="img" aria-label="A loop of four steps: Tag, Weigh, Rank, Explain">
+            <line class="connector" x1="-40" y1="160" x2="6" y2="160" stroke="#3d6b66" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round"/>
+            <line class="connector" x1="314" y1="160" x2="360" y2="160" stroke="#3d6b66" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round"/>
+            <circle cx="160" cy="160" r="140" fill="none" stroke="#2f5653" stroke-width="1.5"/>
+            <path id="trail" d="" fill="none" stroke="#f0784e" stroke-width="3" stroke-linecap="round"/>
+            <circle id="spark" r="7" fill="#f0784e"/>
+            <!-- centre: the card -->
+            <g transform="translate(122,112)">
+              <rect width="76" height="96" rx="6" fill="#eef3f1"/>
+              <rect x="10" y="12" width="34" height="5" rx="2" fill="#1f3d3c"/>
+              <rect x="10" y="26" width="56" height="4" rx="2" fill="#63d4ba"/>
+              <rect x="10" y="36" width="48" height="4" rx="2" fill="#63d4ba"/>
+              <rect x="10" y="46" width="40" height="4" rx="2" fill="#63d4ba"/>
+              <rect x="10" y="60" width="56" height="3" rx="1.5" fill="#a9bdb8"/>
+              <rect x="10" y="68" width="50" height="3" rx="1.5" fill="#a9bdb8"/>
+              <rect x="10" y="76" width="54" height="3" rx="1.5" fill="#a9bdb8"/>
+            </g>
+            <g id="stations"></g>
+          </svg>
+        </div>
+        <p class="caption" id="caption" aria-live="polite"><em>Tag.</em> Every pain point and every fact is tied to one of 10 root causes.</p>
+      </div>
+
+      <div class="outputs">
+        <div class="out"><div class="tick"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="#06201c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Top 3 needs</b><span>The three needs with the most evidence</span></div></div>
+        <div class="out"><div class="tick"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="#06201c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Specific to this country</b><span>Needs only its own evidence points to</span></div></div>
+        <div class="out"><div class="tick"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="#06201c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Why, by role family</b><span>The problems behind each need, with sources</span></div></div>
+      </div>
+    </div>
+    <p class="tagline"><strong>Same method for every customer.</strong> Different evidence, different answer.</p>
+  </section>
+
+  <!-- ================= THE RUN ================= -->
+  <section class="panel" aria-labelledby="run-h">
+    <div class="run-head">
+      <div>
+        <div class="eyebrow">One run of the method</div>
+        <h2 id="run-h" style="margin-top:6px">Pick a country and watch it decide</h2>
+      </div>
+      <button class="ghost" id="replay" type="button">Replay</button>
+    </div>
+
+    <div class="picker" id="picker"></div>
+
+    <div class="legend" aria-hidden="false">
+      <span><i class="sw own"></i>Its own pain point · 2 points</span>
+      <span><i class="sw clu"></i>A pain point from its cluster · 1 point</span>
+      <span><i class="sw rule"></i>A fact or culture rule that applies · 2 points</span>
+    </div>
+
+    <div class="status" id="status" aria-live="polite"></div>
+
+    <div class="board-grid">
+      <div class="board" id="board" role="list" aria-label="The 10 needs and their evidence"></div>
+      <div class="side">
+        <div class="inspector" id="inspector" aria-live="polite">
+          <div class="k">Evidence</div>
+          <div class="t">Hover or tap a block to see what it is.</div>
+        </div>
+        <div class="top3" id="top3"></div>
+        <div class="specific" id="specific"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>Snapshot of <code>Customer Profile Workbook v7.xlsx</code>, 20 Nov 2026</span>
+    <span>40 pain points · 22 factors · 22 active rules</span>
+    <span>Ties go to the need listed first, as in the workbook</span>
+  </div>
+</div>
+
+<script>
+const DATA = {"Serbia": {"cluster": "Russian heritage", "causes": {"C01": {"score": 12, "top": true, "own": [["F4", "MiG-29 maintenance had become impossible", "Fly"], ["U2", "Overhaul route closed by sanctions", "Supply & run"]], "clu": [["F3", "Only a handful of MiG-21s still flying", "Croatia"], ["F6", "Most of the Su-30 fleet grounded", "Malaysia (reference)"], ["F9", "Another government blocked the deal", "Croatia"], ["U3", "Supplier can switch off the parts", "Malaysia (reference)"]], "rules": [["L01", "Fleet heritage", "Russian heritage"], ["L05", "Supply cut by a foreign government", "Yes"]]}, "C02": {"score": 11, "top": true, "own": [["F4", "MiG-29 maintenance had become impossible", "Fly"], ["X4", "Overhauls only with Russian specialists on site", "Fix"], ["U2", "Overhaul route closed by sanctions", "Supply & run"]], "clu": [["F6", "Most of the Su-30 fleet grounded", "Malaysia (reference)"]], "rules": [["L06", "How much it wants to do itself", "High (L4–L5)"], ["L19", "Customs speed", "2.2"]]}, "C03": {"score": 9, "top": true, "own": [["X4", "Overhauls only with Russian specialists on site", "Fix"]], "clu": [["X7", "Allies covered air policing during the switch to Rafale", "Croatia"]], "rules": [["L02", "Fleet heritage", "Russian heritage"], ["L03", "Previous Dassault fleet", "No"], ["L09", "Fleet stage", "New delivery"]]}, "C04": {"score": 1, "top": false, "own": [], "clu": [["F3", "Only a handful of MiG-21s still flying", "Croatia"]], "rules": []}, "C05": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C06": {"score": 3, "top": false, "own": [], "clu": [["U9", "Rafale part numbers to map to NATO codification", "Croatia"]], "rules": [["L16", "Digital government", "0.862"]]}, "C07": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C08": {"score": 1, "top": false, "own": [], "clu": [["F7", "A surprise support bill would hurt", "Croatia"]], "rules": []}, "C09": {"score": 6, "top": false, "own": [], "clu": [["U4", "Overhauled jets came back with suspect parts", "Croatia"], ["U5", "Logistics contract only three years long", "Croatia"]], "rules": [["L10", "Fleet stage", "New delivery"], ["L15", "Uncertainty avoidance (Hofstede)", "92"]]}, "C10": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L18", "Government effectiveness", "53"]]}}}, "Croatia": {"cluster": "Russian heritage", "causes": {"C01": {"score": 12, "top": true, "own": [["F3", "Only a handful of MiG-21s still flying", "Fly"], ["F9", "Another government blocked the deal", "Fly"]], "clu": [["F4", "MiG-29 maintenance had become impossible", "Serbia"], ["F6", "Most of the Su-30 fleet grounded", "Malaysia (reference)"], ["U2", "Overhaul route closed by sanctions", "Serbia"], ["U3", "Supplier can switch off the parts", "Malaysia (reference)"]], "rules": [["L01", "Fleet heritage", "Russian heritage"], ["L05", "Supply cut by a foreign government", "Yes"]]}, "C02": {"score": 6, "top": false, "own": [], "clu": [["F4", "MiG-29 maintenance had become impossible", "Serbia"], ["F6", "Most of the Su-30 fleet grounded", "Malaysia (reference)"], ["X4", "Overhauls only with Russian specialists on site", "Serbia"], ["U2", "Overhaul route closed by sanctions", "Serbia"]], "rules": [["L08", "Depth of local aerospace industry", "None"]]}, "C03": {"score": 11, "top": true, "own": [["X7", "Allies covered air policing during the switch to Rafale", "Fix"]], "clu": [["X4", "Overhauls only with Russian specialists on site", "Serbia"]], "rules": [["L02", "Fleet heritage", "Russian heritage"], ["L03", "Previous Dassault fleet", "No"], ["L07", "Depth of local aerospace industry", "None"], ["L09", "Fleet stage", "New delivery"]]}, "C04": {"score": 2, "top": false, "own": [["F3", "Only a handful of MiG-21s still flying", "Fly"]], "clu": [], "rules": []}, "C05": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C06": {"score": 4, "top": false, "own": [["U9", "Rafale part numbers to map to NATO codification", "Supply & run"]], "clu": [], "rules": [["L16", "Digital government", "0.882"]]}, "C07": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C08": {"score": 2, "top": false, "own": [["F7", "A surprise support bill would hurt", "Fly"]], "clu": [], "rules": []}, "C09": {"score": 8, "top": true, "own": [["U4", "Overhauled jets came back with suspect parts", "Supply & run"], ["U5", "Logistics contract only three years long", "Supply & run"]], "clu": [], "rules": [["L10", "Fleet stage", "New delivery"], ["L15", "Uncertainty avoidance (Hofstede)", "80"]]}, "C10": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}}}, "Greece": {"cluster": "US / NATO", "causes": {"C01": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C02": {"score": 4, "top": true, "own": [["U12", "Greek workshops left out of Rafale repair", "Supply & run"]], "clu": [["X5", "Maintenance run by foreign contractor staff", "Qatar"], ["K3", "No access to the weapons-system software", "UAE"]], "rules": []}, "C03": {"score": 6, "top": true, "own": [["X3", "F-16 upgrade slipped as specialists left HAI", "Fix"], ["U12", "Greek workshops left out of Rafale repair", "Supply & run"]], "clu": [["X5", "Maintenance run by foreign contractor staff", "Qatar"], ["X8", "Emirati technicians still building specialist skills", "UAE"]], "rules": []}, "C04": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C05": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C06": {"score": 3, "top": false, "own": [], "clu": [["K7", "Maintenance data must fit the MoD's new digital systems", "Qatar"]], "rules": [["L16", "Digital government", "0.867"]]}, "C07": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C08": {"score": 2, "top": false, "own": [["F5", "Paid-for Mirage 2000-5s left unused", "Fly"]], "clu": [], "rules": []}, "C09": {"score": 6, "top": true, "own": [["F5", "Paid-for Mirage 2000-5s left unused", "Fly"]], "clu": [], "rules": [["L15", "Uncertainty avoidance (Hofstede)", "100"], ["L22", "Long-term orientation (Hofstede)", "51"]]}, "C10": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}}}, "UAE": {"cluster": "US / NATO", "causes": {"C01": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C02": {"score": 8, "top": true, "own": [["K3", "No access to the weapons-system software", "Certify & plan"]], "clu": [["X5", "Maintenance run by foreign contractor staff", "Qatar"], ["U12", "Greek workshops left out of Rafale repair", "Greece"]], "rules": [["L06", "How much it wants to do itself", "High (L4–L5)"], ["L21", "Innovation base", "46.4"]]}, "C03": {"score": 9, "top": true, "own": [["X8", "Emirati technicians still building specialist skills", "Fix"]], "clu": [["X3", "F-16 upgrade slipped as specialists left HAI", "Greece"], ["X5", "Maintenance run by foreign contractor staff", "Qatar"], ["U12", "Greek workshops left out of Rafale repair", "Greece"]], "rules": [["L09", "Fleet stage", "New delivery"], ["L17", "Language or skills gap", "Yes"]]}, "C04": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C05": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C06": {"score": 3, "top": true, "own": [], "clu": [["K7", "Maintenance data must fit the MoD's new digital systems", "Qatar"]], "rules": [["L16", "Digital government", "0.953"]]}, "C07": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C08": {"score": 1, "top": false, "own": [], "clu": [["F5", "Paid-for Mirage 2000-5s left unused", "Greece"]], "rules": []}, "C09": {"score": 3, "top": false, "own": [], "clu": [["F5", "Paid-for Mirage 2000-5s left unused", "Greece"]], "rules": [["L10", "Fleet stage", "New delivery"]]}, "C10": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}}}, "Qatar": {"cluster": "US / NATO", "causes": {"C01": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C02": {"score": 6, "top": true, "own": [["X5", "Maintenance run by foreign contractor staff", "Fix"]], "clu": [["K3", "No access to the weapons-system software", "UAE"], ["U12", "Greek workshops left out of Rafale repair", "Greece"]], "rules": [["L08", "Depth of local aerospace industry", "None"]]}, "C03": {"score": 9, "top": true, "own": [["X5", "Maintenance run by foreign contractor staff", "Fix"]], "clu": [["X3", "F-16 upgrade slipped as specialists left HAI", "Greece"], ["X8", "Emirati technicians still building specialist skills", "UAE"], ["U12", "Greek workshops left out of Rafale repair", "Greece"]], "rules": [["L07", "Depth of local aerospace industry", "None"], ["L17", "Language or skills gap", "Yes"]]}, "C04": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C05": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C06": {"score": 2, "top": false, "own": [["K7", "Maintenance data must fit the MoD's new digital systems", "Certify & plan"]], "clu": [], "rules": []}, "C07": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L04", "Number of fighter suppliers", "3+"]]}, "C08": {"score": 1, "top": false, "own": [], "clu": [["F5", "Paid-for Mirage 2000-5s left unused", "Greece"]], "rules": []}, "C09": {"score": 5, "top": true, "own": [], "clu": [["F5", "Paid-for Mirage 2000-5s left unused", "Greece"]], "rules": [["L15", "Uncertainty avoidance (Hofstede)", "80"], ["L23", "Individualism (Hofstede)", "18"]]}, "C10": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}}}, "India": {"cluster": "Mixed fleets", "causes": {"C01": {"score": 2, "top": false, "own": [], "clu": [["K9", "US parts inside the jet can block weapons and support", "Egypt"], ["U11", "Spares must not depend on one country", "Indonesia"]], "rules": []}, "C02": {"score": 8, "top": true, "own": [["K8", "No interface data to integrate Indian weapons", "Certify & plan"], ["U10", "Su-30MKI spares late; workshops idle", "Supply & run"]], "clu": [], "rules": [["L06", "How much it wants to do itself", "High (L4–L5)"], ["L21", "Innovation base", "40.1"]]}, "C03": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L17", "Language or skills gap", "Yes"]]}, "C04": {"score": 4, "top": false, "own": [], "clu": [["X6", "Fatigue and corrosion lengthen deep maintenance", "Peru"], ["U8", "Obsolete parts harder to find", "Peru"], ["F10", "Readiness drops while old fleets are upgraded", "Indonesia"], ["F11", "Fewer than 5% of combat aircraft operational", "Peru"]], "rules": []}, "C05": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L20", "Land area", "2973190"]]}, "C06": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C07": {"score": 5, "top": true, "own": [["K6", "One support system per supplier", "Certify & plan"]], "clu": [["U7", "Spares planning across several suppliers", "Egypt"]], "rules": [["L04", "Number of fighter suppliers", "3+"]]}, "C08": {"score": 1, "top": false, "own": [], "clu": [["F11", "Fewer than 5% of combat aircraft operational", "Peru"]], "rules": []}, "C09": {"score": 6, "top": true, "own": [["K5", "Support package ending with no successor ready", "Certify & plan"]], "clu": [], "rules": [["L22", "Long-term orientation (Hofstede)", "51"], ["L23", "Individualism (Hofstede)", "24"]]}, "C10": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}}}, "Egypt": {"cluster": "Mixed fleets", "causes": {"C01": {"score": 5, "top": true, "own": [["K9", "US parts inside the jet can block weapons and support", "Certify & plan"]], "clu": [["U11", "Spares must not depend on one country", "Indonesia"]], "rules": [["L05", "Supply cut by a foreign government", "Yes"]]}, "C02": {"score": 4, "top": true, "own": [], "clu": [["K8", "No interface data to integrate Indian weapons", "India"], ["U10", "Su-30MKI spares late; workshops idle", "India"]], "rules": [["L19", "Customs speed", "2.8"]]}, "C03": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L17", "Language or skills gap", "Yes"]]}, "C04": {"score": 4, "top": false, "own": [], "clu": [["X6", "Fatigue and corrosion lengthen deep maintenance", "Peru"], ["U8", "Obsolete parts harder to find", "Peru"], ["F10", "Readiness drops while old fleets are upgraded", "Indonesia"], ["F11", "Fewer than 5% of combat aircraft operational", "Peru"]], "rules": []}, "C05": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C06": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C07": {"score": 6, "top": true, "own": [["K6", "One support system per supplier", "Certify & plan"], ["U7", "Spares planning across several suppliers", "Supply & run"]], "clu": [], "rules": [["L04", "Number of fighter suppliers", "3+"]]}, "C08": {"score": 1, "top": false, "own": [], "clu": [["F11", "Fewer than 5% of combat aircraft operational", "Peru"]], "rules": []}, "C09": {"score": 3, "top": false, "own": [], "clu": [["K5", "Support package ending with no successor ready", "India"]], "rules": [["L23", "Individualism (Hofstede)", "13"]]}, "C10": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L18", "Government effectiveness", "50.2"]]}}}, "Indonesia": {"cluster": "Mixed fleets", "causes": {"C01": {"score": 5, "top": true, "own": [["U11", "Spares must not depend on one country", "Supply & run"]], "clu": [["K9", "US parts inside the jet can block weapons and support", "Egypt"]], "rules": [["L05", "Supply cut by a foreign government", "Yes"]]}, "C02": {"score": 6, "top": true, "own": [], "clu": [["K8", "No interface data to integrate Indian weapons", "India"], ["U10", "Su-30MKI spares late; workshops idle", "India"]], "rules": [["L06", "How much it wants to do itself", "High (L4–L5)"], ["L19", "Customs speed", "2.8"]]}, "C03": {"score": 6, "top": true, "own": [], "clu": [], "rules": [["L03", "Previous Dassault fleet", "No"], ["L09", "Fleet stage", "New delivery"], ["L17", "Language or skills gap", "Yes"]]}, "C04": {"score": 5, "top": false, "own": [["F10", "Readiness drops while old fleets are upgraded", "Fly"]], "clu": [["X6", "Fatigue and corrosion lengthen deep maintenance", "Peru"], ["U8", "Obsolete parts harder to find", "Peru"], ["F11", "Fewer than 5% of combat aircraft operational", "Peru"]], "rules": []}, "C05": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L20", "Land area", "1892410"]]}, "C06": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C07": {"score": 4, "top": false, "own": [], "clu": [["K6", "One support system per supplier", "India, Egypt"], ["U7", "Spares planning across several suppliers", "Egypt"]], "rules": [["L04", "Number of fighter suppliers", "3+"]]}, "C08": {"score": 1, "top": false, "own": [], "clu": [["F11", "Fewer than 5% of combat aircraft operational", "Peru"]], "rules": []}, "C09": {"score": 5, "top": false, "own": [], "clu": [["K5", "Support package ending with no successor ready", "India"]], "rules": [["L10", "Fleet stage", "New delivery"], ["L23", "Individualism (Hofstede)", "5"]]}, "C10": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}}}, "Peru": {"cluster": "Mixed fleets", "causes": {"C01": {"score": 2, "top": false, "own": [], "clu": [["K9", "US parts inside the jet can block weapons and support", "Egypt"], ["U11", "Spares must not depend on one country", "Indonesia"]], "rules": []}, "C02": {"score": 6, "top": true, "own": [], "clu": [["K8", "No interface data to integrate Indian weapons", "India"], ["U10", "Su-30MKI spares late; workshops idle", "India"]], "rules": [["L06", "How much it wants to do itself", "High (L4–L5)"], ["L19", "Customs speed", "2.6"]]}, "C03": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C04": {"score": 9, "top": true, "own": [["X6", "Fatigue and corrosion lengthen deep maintenance", "Fix"], ["U8", "Obsolete parts harder to find", "Supply & run"], ["F11", "Fewer than 5% of combat aircraft operational", "Fly"]], "clu": [["F10", "Readiness drops while old fleets are upgraded", "Indonesia"]], "rules": [["L11", "Fleet stage", "Ageing"]]}, "C05": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L20", "Land area", "1280000"]]}, "C06": {"score": 0, "top": false, "own": [], "clu": [], "rules": []}, "C07": {"score": 4, "top": false, "own": [], "clu": [["K6", "One support system per supplier", "India, Egypt"], ["U7", "Spares planning across several suppliers", "Egypt"]], "rules": [["L04", "Number of fighter suppliers", "3+"]]}, "C08": {"score": 4, "top": false, "own": [["F11", "Fewer than 5% of combat aircraft operational", "Fly"]], "clu": [], "rules": [["L13", "Budget pressure", "High"]]}, "C09": {"score": 5, "top": true, "own": [], "clu": [["K5", "Support package ending with no successor ready", "India"]], "rules": [["L15", "Uncertainty avoidance (Hofstede)", "87"], ["L23", "Individualism (Hofstede)", "20"]]}, "C10": {"score": 2, "top": false, "own": [], "clu": [], "rules": [["L18", "Government effectiveness", "49.4"]]}}}};
+const NEEDS = {C01:"Supply continuity",C02:"Access to parts and data",C03:"Local capability",C04:"Fleet longevity",C05:"Deployable support",C06:"Trusted records",C07:"Simplicity across fleets",C08:"Cost predictability",C09:"Contract continuity",C10:"Fast decisions"};
+const CLUSTERS = [["Russian heritage",["Serbia","Croatia"]],["US / NATO",["Greece","UAE","Qatar"]],["Mixed fleets",["India","Egypt","Indonesia","Peru"]]];
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------------- the loop ---------------- */
+(() => {
+  const C = 160, R = 140;
+  const steps = [
+    {name:"Tag", sub:"to a root cause", a:Math.PI, text:"<em>Tag.</em> Every pain point and every fact is tied to one of 10 root causes."},
+    {name:"Weigh", sub:"1 or 2 points", a:Math.PI*1.5, text:"<em>Weigh.</em> The country's own evidence counts 2, its cluster's counts 1, each rule that applies counts 2."},
+    {name:"Rank", sub:"top 3", a:0, text:"<em>Rank.</em> The three needs with the highest score become the customer's top needs."},
+    {name:"Explain", sub:"why, with sources", a:Math.PI*0.5, text:"<em>Explain.</em> Each need comes with the problems behind it, by role family, and their sources."}
+  ];
+  const g = document.getElementById("stations"), ns = "http://www.w3.org/2000/svg";
+  const nodes = steps.map(s => {
+    const x = C + R*Math.cos(s.a), y = C + R*Math.sin(s.a);
+    const grp = document.createElementNS(ns,"g");
+    const c = document.createElementNS(ns,"circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",15);
+    c.setAttribute("fill","#13201f"); c.setAttribute("stroke","#3d6b66"); c.setAttribute("stroke-width","2");
+    const lx = x + (Math.abs(Math.cos(s.a))>.5 ? 0 : 0), dy = Math.sin(s.a) < -.5 ? -30 : 40;
+    const t = document.createElementNS(ns,"text");
+    t.setAttribute("x", lx); t.setAttribute("y", y + (Math.abs(Math.sin(s.a))>.5 ? dy : 38));
+    t.setAttribute("text-anchor","middle"); t.setAttribute("class","station-label"); t.textContent = s.name;
+    const st = document.createElementNS(ns,"text");
+    st.setAttribute("x", lx); st.setAttribute("y", +t.getAttribute("y") + 15);
+    st.setAttribute("text-anchor","middle"); st.setAttribute("class","station-sub"); st.textContent = s.sub;
+    grp.append(c,t,st); g.append(grp);
+    return c;
+  });
+  const spark = document.getElementById("spark"), trail = document.getElementById("trail"), cap = document.getElementById("caption");
+  let active = -1;
+  function setActive(i){
+    if (i === active) return; active = i;
+    nodes.forEach((n,j)=>{ n.setAttribute("fill", j===i ? "#2e9f88" : "#13201f"); n.setAttribute("stroke", j===i ? "#63d4ba" : "#3d6b66"); });
+    cap.innerHTML = steps[i].text;
+  }
+  function place(th){
+    const x = C + R*Math.cos(th), y = C + R*Math.sin(th);
+    spark.setAttribute("cx",x); spark.setAttribute("cy",y);
+    const t0 = th - 0.55, x0 = C + R*Math.cos(t0), y0 = C + R*Math.sin(t0);
+    trail.setAttribute("d",`M${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0 1 ${x.toFixed(1)},${y.toFixed(1)}`);
+    // which station did we last pass? stations at PI, 1.5PI, 2PI(0), 2.5PI
+    const rel = ((th - Math.PI) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+    setActive(Math.floor(rel / (Math.PI/2)) % 4);
+  }
+  if (reduce) { place(Math.PI + 0.35); return; }
+  const period = 9000; let start = null;
+  function frame(ts){ if (start===null) start = ts; const p = ((ts-start)%period)/period; place(Math.PI + p*2*Math.PI + 0.02); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
+
+/* ---------------- the run ---------------- */
+const board = document.getElementById("board"), statusEl = document.getElementById("status");
+const inspector = document.getElementById("inspector"), top3El = document.getElementById("top3"), specEl = document.getElementById("specific");
+const picker = document.getElementById("picker");
+let current = "India", timers = [];
+
+const fmt = v => { const n = Number(v); return (!isNaN(n) && v !== "" && n >= 1000) ? n.toLocaleString("en-GB") : v; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+CLUSTERS.forEach(([cl, cs]) => {
+  const g = document.createElement("div"); g.className = "cluster-group";
+  g.innerHTML = `<span>${cl}</span><div class="chips"></div>`;
+  cs.forEach(c => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = c; b.id = "chip-" + c;
+    b.setAttribute("aria-pressed", c === current ? "true" : "false");
+    b.addEventListener("click", () => run(c, true));
+    g.querySelector(".chips").append(b);
+  });
+  picker.append(g);
+});
+document.getElementById("replay").addEventListener("click", () => run(current, true));
+
+function order(country, byScore){
+  const ids = Object.keys(NEEDS);
+  if (!byScore) return ids;
+  const cs = DATA[country].causes;
+  return ids.slice().sort((a,b) => (cs[b].score - cs[a].score) || (a < b ? -1 : 1));
+}
+function positionRows(ids){
+  ids.forEach((id,i) => { const r = board.querySelector(`[data-cause="${id}"]`); r.style.transform = `translateY(calc(var(--rowh) * ${i}))`; });
+}
+function show(tok){
+  board.querySelectorAll(".tok.sel").forEach(t => t.classList.remove("sel")); tok.classList.add("sel");
+  inspector.innerHTML = `<div class="k">${esc(tok.dataset.kind)}</div><div class="t">${esc(tok.dataset.title)}</div><div class="m">${esc(tok.dataset.meta)}</div>`;
+}
+function build(country){
+  board.innerHTML = "";
+  const d = DATA[country];
+  Object.keys(NEEDS).forEach(id => {
+    const c = d.causes[id];
+    const row = document.createElement("div"); row.className = "row"; row.dataset.cause = id; row.setAttribute("role","listitem");
+    row.innerHTML = `<div class="name">${NEEDS[id]}</div><div class="track"></div><div class="score">0</div>`;
+    const tr = row.querySelector(".track");
+    const add = (cls, kind, title, meta, phase) => {
+      const t = document.createElement("button"); t.type = "button"; t.className = `tok ${cls}`;
+      t.dataset.kind = kind; t.dataset.title = title; t.dataset.meta = meta; t.dataset.phase = phase;
+      t.setAttribute("aria-label", `${kind}: ${title}`);
+      t.addEventListener("mouseenter", () => show(t)); t.addEventListener("focus", () => show(t)); t.addEventListener("click", () => show(t));
+      tr.append(t);
+    };
+    c.own.forEach(p => add("own", `${country}'s own pain point · 2 points`, `${p[0]} · ${p[1]}`, `Role family: ${p[2]} · Need: ${NEEDS[id]}`, 1));
+    c.clu.forEach(p => add("clu", `From the ${d.cluster} cluster · 1 point`, `${p[0]} · ${p[1]}`, `Seen in ${p[2]} · Need: ${NEEDS[id]}`, 2));
+    c.rules.forEach(r => add("rule", `Rule ${r[0]} applies · 2 points`, `${r[1]}: ${fmt(r[2])}`, `${country}'s value points to ${NEEDS[id]}`, 3));
+    board.append(row);
+  });
+  positionRows(order(country, false));
+}
+function scoreAt(country, id, phase){
+  const c = DATA[country].causes[id];
+  return (phase>=1 ? 2*c.own.length : 0) + (phase>=2 ? c.clu.length : 0) + (phase>=3 ? 2*c.rules.length : 0);
+}
+function setPhase(country, phase){
+  board.querySelectorAll(".row").forEach(r => { r.querySelector(".score").textContent = scoreAt(country, r.dataset.cause, phase); });
+}
+function finish(country){
+  const ids = order(country, true);
+  positionRows(ids);
+  const top = ids.slice(0,3);
+  board.querySelectorAll(".row").forEach(r => {
+    const i = top.indexOf(r.dataset.cause);
+    r.classList.toggle("top", i >= 0);
+    const nm = r.querySelector(".name");
+    nm.innerHTML = (i >= 0 ? `<span class="rank">${i+1}</span>` : "") + NEEDS[r.dataset.cause];
+  });
+  renderSide(country, top);
+  statusEl.textContent = `4 · Ranked. ${country}'s top 3: ${top.map(t => NEEDS[t]).join(", ")}.`;
+}
+function renderSide(country, top){
+  const d = DATA[country];
+  top3El.innerHTML = top.map((id,i) => {
+    const c = d.causes[id];
+    const parts = [];
+    if (c.own.length) parts.push(`${c.own.length} own pain point${c.own.length>1?"s":""}`);
+    if (c.clu.length) parts.push(`${c.clu.length} from its cluster`);
+    if (c.rules.length) parts.push(`${c.rules.length} rule${c.rules.length>1?"s":""}`);
+    let lead;
+    if (c.own.length) lead = `<b>${esc(c.own[0][1])}</b> (${esc(c.own[0][2])})`;
+    else if (c.rules.length) lead = `<b>${esc(c.rules[0][1])}: ${esc(fmt(c.rules[0][2]))}</b>`;
+    else lead = `<b>${esc(c.clu[0][1])}</b> (seen in ${esc(c.clu[0][2])})`;
+    return `<div class="need"><h3><span class="rank">${i+1}</span>${NEEDS[id]}<span class="pts">${c.score} pts</span></h3>
+      <div class="why">${parts.join(" · ")}</div><div class="why">Lead evidence: ${lead}</div></div>`;
+  }).join("");
+  const spec = Object.keys(NEEDS).filter(id => !top.includes(id) && d.causes[id].clu.length === 0 && (d.causes[id].own.length + d.causes[id].rules.length) > 0);
+  specEl.innerHTML = spec.length ? `Also specific to ${country}: <b>${spec.map(s => NEEDS[s]).join(", ")}</b>` : `Nothing specific to ${country} beyond its cluster yet.`;
+}
+function run(country, animate){
+  timers.forEach(clearTimeout); timers = [];
+  current = country;
+  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", b.textContent === country ? "true" : "false"));
+  inspector.innerHTML = `<div class="k">Evidence</div><div class="t">Hover or tap a block to see what it is.</div>`;
+  build(country);
+  if (!animate || reduce) { setPhase(country, 3); finish(country); return; }
+  top3El.innerHTML = ""; specEl.textContent = "";
+  board.querySelectorAll(".tok").forEach(t => t.classList.add("pending"));
+  setPhase(country, 0);
+  const d = DATA[country];
+  const labels = [
+    "",
+    `1 · ${country}'s own pain points (2 points each)`,
+    `2 · Pain points from the rest of the ${d.cluster} cluster (1 point each)`,
+    `3 · Facts and culture rules that apply to ${country} (2 points each)`
+  ];
+  let t = 150;
+  [1,2,3].forEach(ph => {
+    timers.push(setTimeout(() => {
+      statusEl.textContent = labels[ph];
+      const toks = [...board.querySelectorAll(`.tok[data-phase="${ph}"]`)];
+      toks.forEach((tok,i) => timers.push(setTimeout(() => tok.classList.remove("pending"), i*55)));
+      timers.push(setTimeout(() => setPhase(country, ph), Math.min(toks.length*55, 700)));
+    }, t));
+    t += 1300;
+  });
+  timers.push(setTimeout(() => finish(country), t + 100));
+}
+run("India", false);
+statusEl.textContent = "India shown. Pick any country to run the method.";
+</script>
+
+</body>
+</html>
